@@ -29,7 +29,12 @@
        (<= (:blue reveal 0) (:blue bag 0))))
 
 (defn check-game [game bag]
-  (assoc game :valid? (every? #(check-reveal % bag) (:reveals game))))
+  (every? #(check-reveal % bag) (:reveals game)))
+
+(defn game-needs [{:keys [reveals]}]
+  {:red (apply max (keep :red reveals))
+   :green (apply max (keep :green reveals))
+   :blue (apply max (keep :blue reveals))})
 
 (defn parse-input [r]
   (->> (slurp (io/resource r))
@@ -38,8 +43,14 @@
 
 (def bag {:red 12 :green 13 :blue 14})
 
-(->> (parse-input "d2_small.txt")
-     (map #(check-game % bag))
+(->> (parse-input "d2.txt")
+     (map #(assoc % :valid? (check-game % bag)))
      (filter :valid?)
      (map :id)
      (reduce +))
+
+(->> (parse-input "d2.txt")
+     (map #(game-needs %))
+     (map (comp (partial reduce *) vals))
+     (reduce +))
+
