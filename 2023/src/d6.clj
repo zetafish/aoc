@@ -10,32 +10,57 @@
   {:time [42 68 69 85]
    :dist [284 1005 1122 1341]})
 
-{:time 0 :speed 0}
+(defn race [race-time button-time]
+  (* button-time (- race-time button-time)))
 
-(defn race [button-time race-time]
+(defn bin-lsearch
+  "Find lowest m in [a..b] for which (> (f m) r)"
+  [a b f r]
+  ;; (println (format "%s:%s %s:%s" a (f a) b (f b)))
   (cond
-    (zero? button-time) 0
-    (= button-time race-time) 0
-    :else (* button-time (- race-time button-time))))
+    (= a b) b
+    (= (inc a) b) (if (> (f a) r) a b)
+    :else (let [m (quot (+ a b) 2)]
+            (if (<= (f m) r)
+              (recur m b f r)
+              (recur a m f r)))))
 
-(defn beat-count [time record]
-  (- (inc time)
-     (count (take-while #(<= (race % time) record) (range (inc time))))
-     (count (take-while #(<= (race % time) record) (range time -1 -1)))))
+(defn bin-rsearch
+  "Find highest m in [a..b] for which (> (f m r)"
+  [a b f r]
+  ;; (println (format "%s:%s %s:%s" a (f a) b (f b)))
+  (cond
+    (= a b) b
+    (= (inc a) b) (if (> (f b) r) b a)
+    :else (let [m (quot (+ a b) 2)]
+            (if (<= (f m) r)
+              (recur a m f r)
+              (recur m b f r)))))
 
-(defn count-the-ways-1 [{:keys [time dist]}]
-  (reduce *
-          (map #(apply beat-count %)
-               (partition 2 (interleave time dist)))))
+(defn record-breakers [race-time record]
+  (let [m (quot race-time 2)
+        f (partial race race-time)
+        a (bin-lsearch 0 m f record)
+        b (bin-rsearch m race-time f record)]
+    [a b]))
 
-(defn count-the-ways-2 [{:keys [time dist]}]
-  (beat-count
-   (Long/parseLong (str/join (map str time)))
-   (Long/parseLong (str/join (map str dist)))))
+(defn count-record-breakers [race-time record]
+  (let [[a b] (record-breakers race-time record)]
+    (inc (- b a))))
 
-(count-the-ways-1 example)
-(count-the-ways-1 data)
+(defn part-1 [{:keys [time dist]}]
+  (let [races (partition 2 (interleave time dist))]
+    (reduce * (map #(apply count-record-breakers %) races))))
 
-(count-the-ways-2 example)
-(count-the-ways-2 data)
+(defn part-2 [{:keys [time dist]}]
+  (let [f (fn [coll] (Long/parseLong (str/join (map str coll))))]
+    [(f time)
+     (f dist)]
+    (count-record-breakers (f time) (f dist))))
+
+(part-1 example)
+(part-1 data)
+
+(part-2 example)
+(part-2 data)
 
