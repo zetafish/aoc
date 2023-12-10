@@ -3,7 +3,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as str]))
 
-(defn parse-int [s] (Integer/parseInt s))
+(defn parse-int [s] (Long/parseLong s))
 
 (defn parse-seeds [[seeds]]
   (map parse-int
@@ -11,43 +11,61 @@
         (second (str/split seeds #"seeds: "))
         #" +")))
 
-(defn parse-number-grid [lines]
+(defn parse-mapping [lines]
   (map (comp (partial map parse-int)
              #(str/split % #" +")) lines))
-
-(def params [:seed
-             :soil
-             :fertilizer
-             :water
-             :light
-             :temperature
-             :humidity
-             :location])
-
-(def transitions (partition 2 (interleave params (rest params))))
 
 (defn read-almanac [f]
   (let [sections (->> (str/split-lines (slurp (io/resource f)))
                       (partition-by #{""})
                       (remove #{[""]})
                       vec)]
-    (assoc (zipmap transitions
-                   (map (comp parse-number-grid rest) (rest sections)))
-           :seeds (parse-seeds (sections 0)))))
+    {:seeds (parse-seeds (sections 0))
+     :mappings (map (comp parse-mapping rest) (rest sections))}))
 
-(defn apply-almanac [almanac plant from to]
-  (if-let [n (->> (get almanac [from to])
-                  (filter (fn [[_ src n]]
-                            (<= src (from plant) (+ src n -1))))
-                  (map (fn [[dst src _]] (+ (from plant) (- src) dst)))
-                  first)]
-    (assoc plant to n)
-    (assoc plant to (from plant))))
+(defn match-range [[s-min s-length] [m-min m-length]]
+  (let [s-max (+ s-min s-length -1)
+        m-max (+ m-min m-length -1)
+        valid? (partial apply <=)
+        encode (fn [[lo hi]] [lo (inc (- hi lo))])]
+    {:miss (->> [[s-min (min s-max (dec m-min))]
+                 [(max s-min (inc m-max)) s-max]]
+                (filter valid?)
+                (map encode))
+     :hit (->> [[(max m-min s-min) (min m-max s-max)]]
+               (filter valid?)
+               (map encode))}))
 
-(def almanac (read-almanac "d5_small.txt"))
+(defn apply-mapping-entry [rn [dst src  n]]
+  (let [{:keys [hit miss]} (match-range rn [src n])]
+    {:miss miss
+     :hit (map (fn [[s n]] [(+ s dst (- src)) n]) hit)}))
 
-(reduce (fn [plant [from to]]
-          (apply-almanac almanac plant from to))
-        {:seed 79}
-        transitions)
+(defn apply-mapping [ranges mapping]
+  (apply concat
+         (vals
+          (reduce (fn [state entry]
+                    (let [coll (map #(apply-mapping-entry % entry) (:miss state))]
+                      (-> state
+                          (update :hit concat (mapcat :hit coll))
+                          (assoc :miss (mapcat :miss coll)))))
+                  {:miss ranges}
+                  mapping))))
 
+(defn min-location [almanac]
+  (->> (reduce apply-mapping
+               (:seeds almanac)
+               (:mappings almanac))
+       (map first)
+       (apply min)))
+
+(def example (read-almanac "d5_small.txt"))
+(def data (read-almanac "d5.txt"))
+
+;; part 1
+(min-location (update example :seeds zipmap (repeat 1)))
+(min-location (update data :seeds zipmap (repeat 1)))
+
+;; part 2
+(min-location (update example :seeds (partial partition 2)))
+(min-location (update data :seeds (partial partition 2)))
