@@ -1,5 +1,6 @@
 (ns d6
-  "Wait For It")
+  "Wait For It"
+  (:require [clojure.string :as str]))
 
 (def example
   {:time [7 15 30]
@@ -17,14 +18,24 @@
     (= button-time race-time) 0
     :else (* button-time (- race-time button-time))))
 
-(defn beat-record [time record]
-  (->> (map #(race % time) (range (inc time)))
-       (filter #(> % record))))
+(defn beat-count [time record]
+  (- (inc time)
+     (count (take-while #(<= (race % time) record) (range (inc time))))
+     (count (take-while #(<= (race % time) record) (range time -1 -1)))))
 
-(defn ways-to-beat-all
-  [{:keys [time dist]}]
-  (reduce * (map #(count (apply beat-record %))
-                 (partition 2 (interleave time dist)))))
+(defn count-the-ways-1 [{:keys [time dist]}]
+  (reduce *
+          (map #(apply beat-count %)
+               (partition 2 (interleave time dist)))))
 
-(ways-to-beat-all example)
-(ways-to-beat-all data)
+(defn count-the-ways-2 [{:keys [time dist]}]
+  (beat-count
+   (Long/parseLong (str/join (map str time)))
+   (Long/parseLong (str/join (map str dist)))))
+
+(count-the-ways-1 example)
+(count-the-ways-1 data)
+
+(count-the-ways-2 example)
+(count-the-ways-2 data)
+
