@@ -25,15 +25,15 @@
   (reverse (take-while (complement all-zeros)
                        (iterate derive (seq coll)))))
 
-(defn next-number [lower upper]
-  (+ (last lower) (last upper)))
+(defn extrapolate [hist op rev]
+  (loop [seed [0] hist (map rev hist)]
+    (if (not (seq hist))
+      seed
+      (recur (conj (first hist) (op (ffirst hist) (first seed)))
+             (rest hist)))))
 
-(defn extrapolate-1 [lower upper]
-  (conj upper (+ (first upper) (first lower))))
-
-(defn extrapolate [hist]
-  (loop [seed [0] hist (map reverse hist)]
-    ;; (println seed)
+(defn extrapolate* [hist]
+  (loop [seed [0] hist hist]
     (if (not (seq hist))
       seed
       (recur (extrapolate-1 seed (first hist))
@@ -41,4 +41,8 @@
 
 (def report (read-report "d9.txt"))
 
-(println (reduce + (map first (map #(extrapolate (history %)) report))))
+(println (reduce + (map first (map #(extrapolate (history %) + reverse) example))))
+(println (reduce + (map first (map #(extrapolate (history %) - identity) example))))
+
+(println (reduce + (map first (map #(extrapolate (history %) + reverse) report))))
+(println (reduce + (map first (map #(extrapolate (history %) - identity) report))))
