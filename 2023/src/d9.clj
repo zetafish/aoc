@@ -32,17 +32,10 @@
       (recur (conj (first hist) (op (ffirst hist) (first seed)))
              (rest hist)))))
 
-(defn extrapolate* [hist]
-  (loop [seed [0] hist hist]
-    (if (not (seq hist))
-      seed
-      (recur (extrapolate-1 seed (first hist))
-             (rest hist)))))
-
 (def report (read-report "d9.txt"))
 
-(println (reduce + (map first (map #(extrapolate (history %) + reverse) example))))
-(println (reduce + (map first (map #(extrapolate (history %) - identity) example))))
+;; (println (reduce + (map first (map #(extrapolate (history %) + reverse) example))))
+;; (println (reduce + (map first (map #(extrapolate (history %) - identity) example))))
 
-(println (reduce + (map first (map #(extrapolate (history %) + reverse) report))))
-(println (reduce + (map first (map #(extrapolate (history %) - identity) report))))
+(println "part 1:" (reduce + (map first (map #(extrapolate (history %) + reverse) report))))
+(println "part 2:" (reduce + (map first (map #(extrapolate (history %) - identity) report))))
