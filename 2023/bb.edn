@@ -1,2 +1,4 @@
 {:paths ["src" "resources"]
- :deps {org.clojure/math.numeric-tower {:mvn/version "0.0.5"}}}
+ :deps {org.clojure/math.numeric-tower {:mvn/version "0.0.5"}
+        org.clojure/data.finger-tree {:mvn/version "0.0.3"}
+        data.deque/data.deque {:mvn/version "0.1.0"}}}
