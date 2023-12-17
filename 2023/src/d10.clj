@@ -223,6 +223,7 @@
                        []))
         inner-cells (->> inner-dirs
                          (map #(mapv + cell (dir->vec %)))
+                         (remove inner)
                          (filter #(tile? maze %)))
         found-inner (expand-area maze inner-cells (partial tile? maze))
         next-dir (case cell-value
@@ -244,11 +245,11 @@
                      :inner-dirs inner-dirs))]
     {:cell next-cell
      :dir next-dir
-     :inner (distinct (into inner found-inner))}))
+     :inner (into inner found-inner)}))
 
 (defn inner-area [maze]
   (let [start (top-left-non-tile maze)]
-    (->> {:cell start :dir :north}
+    (->> {:cell start :dir :north :inner #{}}
          (iterate (partial step-clock-wise maze))
          (drop 1)
          (take-while #(not= start (:cell %)))
